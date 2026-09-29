@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>flok · Åbne ture</title>
+<style>
+  :root { color-scheme: light;
+    --forest:#1F3A2E; --forest-deep:#0E1F18; --coral:#E07856; --coral-deep:#C95E3D;
+    --gold:#C9A96E; --cream:#F5F2EA; --ink:#1A2620; --muted:#6B7A71; --line:#E2DCCB;
+    --green:#2E7D52; --green-soft:#E3F0E8; --red:#B23A3A; --red-soft:#F6E4E2;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body { background:var(--cream); color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; line-height:1.45; }
+  .app { max-width:480px; margin:0 auto; min-height:100vh; display:flex; flex-direction:column; }
+  /* HEADER */
+  header { background:var(--forest); color:var(--cream); padding:16px 18px 14px; position:sticky; top:0; z-index:10; }
+  .h-row { display:flex; align-items:center; gap:10px; }
+  .logo { font-weight:800; font-size:1.35rem; letter-spacing:-.01em; font-style:italic; }
+  .logo span { color:var(--coral); }
+  .h-sub { font-size:.78rem; opacity:.75; margin-top:1px; }
+  .proto { background:rgba(201,169,110,.2); border:1px solid rgba(201,169,110,.5); color:#EFE3C8; font-size:.72rem; border-radius:8px; padding:6px 10px; margin-top:10px; }
+  main { flex:1; padding:14px 14px 110px; }
+  /* TOUR CARD */
+  .tour { background:#fff; border:1px solid var(--line); border-radius:16px; padding:16px; margin-bottom:14px; box-shadow:0 1px 4px rgba(14,31,24,.05); }
+  .t-top { display:flex; gap:11px; align-items:center; }
+  .avatar { width:44px; height:44px; border-radius:50%; background:var(--forest); color:var(--cream); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:1.1rem; flex-shrink:0; }
+  .t-guide { font-weight:700; font-size:.95rem; }
+  .t-guide small { display:block; font-weight:600; font-size:.72rem; color:var(--coral); text-transform:uppercase; letter-spacing:.06em; }
+  .t-status { margin-left:auto; font-size:.72rem; font-weight:800; border-radius:8px; padding:4px 10px; text-transform:uppercase; letter-spacing:.04em; white-space:nowrap; }
+  .st-open { background:#FCEAE2; color:var(--coral-deep); }
+  .st-go { background:var(--green-soft); color:var(--green); }
+  .st-drop { background:var(--red-soft); color:var(--red); }
+  .t-when { font-size:1.25rem; font-weight:800; margin-top:12px; color:var(--forest); }
+  .t-meta { display:flex; gap:7px; flex-wrap:wrap; margin-top:8px; }
+  .meta-chip { background:var(--cream); border:1px solid var(--line); border-radius:8px; padding:4px 10px; font-size:.8rem; font-weight:600; color:var(--ink); }
+  .t-route { color:var(--muted); font-size:.88rem; margin-top:9px; }
+  .t-free { font-size:.78rem; color:var(--muted); margin-top:9px; padding-top:9px; border-top:1px dashed var(--line); }
+  .t-free b { color:var(--green); }
+  /* PROGRESS */
+  .prog-row { display:flex; align-items:center; gap:10px; margin-top:11px; }
+  .prog { flex:1; height:8px; background:var(--cream); border-radius:99px; overflow:hidden; border:1px solid var(--line); }
+  .prog > div { height:100%; background:linear-gradient(90deg, var(--coral), var(--coral-deep)); border-radius:99px; transition:width .4s; }
+  .prog.full > div { background:var(--green); }
+  .prog-txt { font-size:.8rem; font-weight:700; color:var(--muted); white-space:nowrap; }
+  .joined-names { font-size:.8rem; color:var(--muted); margin-top:7px; }
+  .joined-names b { color:var(--ink); }
+  .deadline { font-size:.78rem; color:var(--muted); margin-top:6px; }
+  .deadline b { color:var(--coral-deep); }
+  /* JOIN */
+  .join-btn { display:block; width:100%; margin-top:13px; background:var(--coral); color:#fff; border:none; border-radius:12px; padding:14px; font-size:1.02rem; font-weight:800; cursor:pointer; font-family:inherit; }
+  .join-btn:active { background:var(--coral-deep); }
+  .join-btn.leave { background:#fff; color:var(--muted); border:1.5px solid var(--line); font-weight:600; font-size:.88rem; padding:10px; }
+  .join-btn:disabled { background:var(--line); color:var(--muted); cursor:default; }
+  .you-in { margin-top:13px; background:var(--green-soft); border:1px solid rgba(46,125,82,.3); color:var(--green); border-radius:12px; padding:12px; text-align:center; font-weight:800; font-size:.95rem; }
+  .join-form { margin-top:12px; display:flex; flex-direction:column; gap:8px; }
+  .join-form input { border:1.5px solid var(--line); border-radius:11px; padding:12px 14px; font-size:1rem; font-family:inherit; background:#fff; }
+  .join-form input:focus { outline:none; border-color:var(--coral); }
+  .jf-row { display:flex; gap:8px; }
+  .jf-row .join-btn { margin-top:0; }
+  .jf-cancel { background:#fff; color:var(--muted); border:1.5px solid var(--line); border-radius:11px; padding:0 16px; font-family:inherit; font-weight:600; cursor:pointer; }
+  /* CREATE (guide) */
+  .fab { position:fixed; bottom:18px; left:50%; transform:translateX(-50%); width:min(452px, calc(100% - 28px)); background:var(--forest); color:var(--cream); border:none; border-radius:14px; padding:15px; font-size:.98rem; font-weight:800; cursor:pointer; font-family:inherit; box-shadow:0 6px 20px rgba(14,31,24,.3); z-index:20; }
+  .sheet { position:fixed; inset:0; background:rgba(14,31,24,.5); display:none; align-items:flex-end; justify-content:center; z-index:30; }
+  .sheet.open { display:flex; }
+  .sheet-inner { background:var(--cream); width:100%; max-width:480px; border-radius:20px 20px 0 0; padding:20px 18px 26px; max-height:88vh; overflow-y:auto; }
+  .sheet-inner h2 { font-size:1.15rem; color:var(--forest); margin-bottom:2px; }
+  .sheet-inner .sub2 { color:var(--muted); font-size:.82rem; margin-bottom:14px; }
+  .f-label { font-size:.78rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; margin:12px 0 5px; display:block; }
+  .sheet-inner input, .sheet-inner select { width:100%; border:1.5px solid var(--line); border-radius:11px; padding:12px 14px; font-size:1rem; font-family:inherit; background:#fff; color:var(--ink); }
+  .f-2col { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .empty { text-align:center; color:var(--muted); padding:50px 20px; font-size:.92rem; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="h-row">
+      <div>
+        <div class="logo">fl<span>o</span>k</div>
+        <div class="h-sub">Åbne ture · København</div>
+      </div>
+    </div>
+    <div class="proto">⚠️ PROTOTYPE — tilmeldinger gemmes kun i DENNE browser. Til den rigtige test med løbekammeraterne skal den have backend (plan F1). Flowet her er 1:1 det der skal bygges.</div>
+  </header>
+
+  <main id="feed"></main>
+
+  <button class="fab" id="openCreate">＋ Læg en tur op (guide)</button>
+
+  <div class="sheet" id="sheet">
+    <div class="sheet-inner">
+      <h2>Læg en åben tur op</h2>
+      <p class="sub2">Turen kører kun, hvis nok melder sig inden fristen — ellers droppes den automatisk. Ingen forpligtelse før det.</p>
+      <label class="f-label">Guide</label>
+      <input id="cGuide" value="Søren">
+      <div class="f-2col">
+        <div><label class="f-label">Dato</label><input type="date" id="cDate"></div>
+        <div><label class="f-label">Tidspunkt</label><input type="time" id="cTime" value="17:30"></div>
+      </div>
+      <div class="f-2col">
+        <div><label class="f-label">Distance (km)</label><input type="number" id="cKm" value="5" min="1" max="42" inputmode="numeric"></div>
+        <div><label class="f-label">Tempo (min/km)</label><input id="cPace" value="5:30"></div>
+      </div>
+      <label class="f-label">Rute (kort beskrivelse)</label>
+      <input id="cRoute" placeholder="fx Rundt om søerne, start ved Dronning Louises Bro">
+      <div class="f-2col">
+        <div><label class="f-label">Kører ved min.</label><input type="number" id="cMin" value="3" min="1" max="20" inputmode="numeric"></div>
+        <div><label class="f-label">Tilmeldingsfrist</label><input type="datetime-local" id="cDeadline"></div>
+      </div>
+      <button class="join-btn" id="createBtn" style="margin-top:18px">Læg turen op</button>
+      <button class="join-btn leave" id="closeSheet">Annullér</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const KEY = 'flokTurState_v1';
+const H = 3600e3, D = 24*H;
+
+function nextWeekday(from, wd, h, m){ // wd: 0=søn..6=lør
+  const d = new Date(from);
+  d.setHours(h, m, 0, 0);
+  let add = (wd - d.getDay() + 7) % 7;
+  if(add === 0 && d.getTime() <= from) add = 7;
+  d.setDate(d.getDate() + add);
+  return d.getTime();
+}
+function seed(){
+  const now = Date.now();
+  const tomorrow = new Date(now + D); tomorrow.setHours(17,30,0,0);
+  const tomorrowNoon = new Date(now + D); tomorrowNoon.setHours(12,0,0,0);
+  const wed = nextWeekday(now + 2*D, 3, 17, 30); // næste onsdag 17:30 (min. 2 dage ude)
+  return {
+    me: '',
+    tours: [
+      { id:1, guide:'Søren', official:true, start: tomorrow.getTime(), km:7, pace:'5:30',
+        route:'Rundt i centrum — start ved Rådhuspladsen', min:3, deadline: tomorrowNoon.getTime(),
+        joined:['Mads'] },
+      { id:2, guide:'Søren', official:true, start: wed, km:5, pace:'6:00',
+        route:'Rundt om Hovedbanegården og Indre By — roligt tempo', min:4, deadline: wed - 2*D,
+        joined:[] }
+    ]
+  };
+}
+let state;
+try { state = JSON.parse(localStorage.getItem(KEY)); } catch(e){}
+if(!state || !Array.isArray(state.tours)) state = seed();
+function save(){ try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e){} }
+
+function fmtDay(ts){
+  const d = new Date(ts), now = new Date();
+  const today = new Date(now); today.setHours(0,0,0,0);
+  const diff = Math.round((new Date(d).setHours(0,0,0,0) - today.getTime())/D);
+  const wd = d.toLocaleDateString('da-DK',{weekday:'long'});
+  const t = d.toLocaleTimeString('da-DK',{hour:'2-digit',minute:'2-digit'});
+  if(diff===0) return 'I dag · '+t;
+  if(diff===1) return 'I morgen ('+wd+') · '+t;
+  return wd.charAt(0).toUpperCase()+wd.slice(1)+' '+d.getDate()+'/'+(d.getMonth()+1)+' · '+t;
+}
+function fmtLeft(ms){
+  if(ms <= 0) return 'udløbet';
+  const dd = Math.floor(ms/D), hh = Math.floor(ms%D/H), mm = Math.floor(ms%H/6e4);
+  if(dd>0) return dd+' dg '+hh+' t';
+  if(hh>0) return hh+' t '+mm+' min';
+  return mm+' min';
+}
+function statusOf(t){
+  if(t.joined.length >= t.min) return 'go';
+  if(Date.now() > t.deadline) return 'drop';
+  return 'open';
+}
+
+let joinFormFor = null;
+function render(){
+  const feed = document.getElementById('feed');
+  feed.innerHTML = '';
+  const tours = [...state.tours].sort((a,b)=>a.start-b.start);
+  if(!tours.length){ feed.innerHTML = '<div class="empty">Ingen åbne ture lige nu.<br>Læg en op nedenfor.</div>'; return; }
+  tours.forEach(t=>{
+    const st = statusOf(t);
+    const youIn = state.me && t.joined.includes(state.me);
+    const card = document.createElement('div');
+    card.className = 'tour';
+    const stLabel = st==='go' ? '✓ Turen kører' : st==='drop' ? 'Droppet' : 'Åben';
+    const stClass = st==='go' ? 'st-go' : st==='drop' ? 'st-drop' : 'st-open';
+    const pct = Math.min(100, t.joined.length/t.min*100);
+    card.innerHTML =
+      '<div class="t-top"><div class="avatar">'+esc(t.guide.charAt(0))+'</div>'+
+      '<div class="t-guide">'+esc(t.guide)+(t.official?'<small>Officiel guide</small>':'')+'</div>'+
+      '<span class="t-status '+stClass+'">'+stLabel+'</span></div>'+
+      '<div class="t-when">'+fmtDay(t.start)+'</div>'+
+      '<div class="t-meta"><span class="meta-chip">🏃 '+t.km+' km</span><span class="meta-chip">⚡ '+esc(t.pace)+' /km</span><span class="meta-chip">👥 kører ved min. '+t.min+'</span></div>'+
+      '<div class="t-route">📍 '+esc(t.route)+'</div>'+
+      '<div class="t-free"><b>Gratis</b> · fælles løbetur i samme tempo — ikke en guidet tur, ingen forpligtelser.</div>'+
+      '<div class="prog-row"><div class="prog'+(st==='go'?' full':'')+'"><div style="width:'+pct+'%"></div></div><span class="prog-txt">'+t.joined.length+' / '+t.min+' tilmeldt</span></div>'+
+      (t.joined.length ? '<div class="joined-names">Med på turen: <b>'+t.joined.map(esc).join('</b> · <b>')+'</b></div>' : '')+
+      (st==='open' ? '<div class="deadline">Tilmelding lukker om <b>'+fmtLeft(t.deadline-Date.now())+'</b>'+(t.joined.length<t.min?' — mangler '+(t.min-t.joined.length)+' mere':'')+'</div>' : '')+
+      (st==='drop' ? '<div class="deadline">For få tilmeldte inden fristen — turen blev droppet. Ingen sure miner.</div>' : '');
+
+    if(st!=='drop'){
+      if(youIn){
+        card.innerHTML += '<div class="you-in">✓ Du er på! Vi ses '+fmtDay(t.start).toLowerCase()+'</div>';
+        const leave = document.createElement('button');
+        leave.className='join-btn leave'; leave.textContent='Afmeld mig';
+        leave.onclick=()=>{ t.joined = t.joined.filter(n=>n!==state.me); save(); render(); };
+        card.appendChild(leave);
+      } else if(joinFormFor===t.id){
+        const f = document.createElement('div');
+        f.className='join-form';
+        f.innerHTML = '<input id="jName" placeholder="Dit navn" value="'+esc(state.me||'')+'">'+
+                      '<div class="jf-row"><button class="join-btn" id="jGo" style="flex:1">Løb med ✓</button><button class="jf-cancel" id="jNo">Luk</button></div>';
+        card.appendChild(f);
+        f.querySelector('#jGo').onclick=()=>{
+          const n = f.querySelector('#jName').value.trim();
+          if(!n) { f.querySelector('#jName').focus(); return; }
+          state.me = n;
+          if(!t.joined.includes(n)) t.joined.push(n);
+          joinFormFor = null; save(); render();
+        };
+        f.querySelector('#jNo').onclick=()=>{ joinFormFor=null; render(); };
+      } else {
+        const b = document.createElement('button');
+        b.className='join-btn';
+        b.textContent='Løb med';
+        b.onclick=()=>{
+          if(state.me){ if(!t.joined.includes(state.me)) t.joined.push(state.me); save(); render(); }
+          else { joinFormFor = t.id; render(); setTimeout(()=>{const i=document.getElementById('jName'); if(i) i.focus();},50); }
+        };
+        card.appendChild(b);
+      }
+    }
+    feed.appendChild(card);
+  });
+}
+function esc(s){ return (s||'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+/* CREATE */
+const sheet = document.getElementById('sheet');
+document.getElementById('openCreate').onclick=()=>{
+  const tmr = new Date(Date.now()+D);
+  document.getElementById('cDate').value = tmr.toISOString().slice(0,10);
+  const dl = new Date(Date.now()+20*H);
+  document.getElementById('cDeadline').value = new Date(dl.getTime()-dl.getTimezoneOffset()*6e4).toISOString().slice(0,16);
+  sheet.classList.add('open');
+};
+document.getElementById('closeSheet').onclick=()=>sheet.classList.remove('open');
+sheet.onclick=e=>{ if(e.target===sheet) sheet.classList.remove('open'); };
+document.getElementById('createBtn').onclick=()=>{
+  const date = document.getElementById('cDate').value, time = document.getElementById('cTime').value;
+  const route = document.getElementById('cRoute').value.trim();
+  const dl = document.getElementById('cDeadline').value;
+  if(!date || !time || !route || !dl){ alert('Udfyld dato, tid, rute og frist.'); return; }
+  const start = new Date(date+'T'+time).getTime();
+  const deadline = new Date(dl).getTime();
+  if(deadline >= start){ alert('Fristen skal ligge FØR turen starter.'); return; }
+  state.tours.push({
+    id: Date.now(), guide: document.getElementById('cGuide').value.trim()||'Guide', official:true,
+    start, km:+document.getElementById('cKm').value||5, pace:document.getElementById('cPace').value.trim()||'5:30',
+    route, min:+document.getElementById('cMin').value||3, deadline, joined:[]
+  });
+  save(); sheet.classList.remove('open'); render();
+};
+
+render();
+setInterval(render, 60e3); // countdown opdaterer hvert minut
+</script>
+</body>
+</html>

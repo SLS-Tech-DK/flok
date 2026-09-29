@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>flok · webapp v1</title>
+<style>
+  :root { color-scheme: light;
+    --forest:#1F3A2E; --forest-deep:#0E1F18; --coral:#E07856; --coral-deep:#C95E3D;
+    --gold:#C9A96E; --cream:#F5F2EA; --ink:#1A2620; --muted:#6B7A71; --line:#E2DCCB;
+    --green:#2E7D52; --green-soft:#E3F0E8; --red:#B23A3A; --red-soft:#F6E4E2; --coral-soft:#FCEAE2;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body { background:var(--cream); color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; line-height:1.45; }
+  .app { max-width:480px; margin:0 auto; min-height:100vh; display:flex; flex-direction:column; }
+  header { background:var(--forest); color:var(--cream); padding:12px 16px 10px; position:sticky; top:0; z-index:40; }
+  .h-row { display:flex; align-items:center; gap:10px; }
+  .logo { font-weight:800; font-size:1.25rem; font-style:italic; }
+  .logo span { color:var(--coral); }
+  .rev-toggle { margin-left:auto; background:rgba(201,169,110,.18); border:1px solid rgba(201,169,110,.5); color:#EFE3C8; border-radius:9px; padding:6px 11px; font-size:.74rem; font-weight:700; cursor:pointer; font-family:inherit; }
+  .rev-toggle.on { background:var(--gold); color:var(--forest-deep); border-color:var(--gold); }
+  .demo-banner { background:rgba(201,169,110,.15); border:1px solid rgba(201,169,110,.4); color:#EFE3C8; font-size:.7rem; border-radius:8px; padding:5px 9px; margin-top:8px; }
+  main { flex:1; padding:14px 14px 130px; }
+  h2.screen-title { font-size:1.25rem; color:var(--forest); margin-bottom:2px; }
+  .screen-sub { color:var(--muted); font-size:.84rem; margin-bottom:14px; }
+  /* TABS */
+  .tabbar { position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:100%; max-width:480px; background:#fff; border-top:1px solid var(--line); display:flex; z-index:40; }
+  .tabbar button { flex:1; background:none; border:none; padding:10px 4px 12px; font-family:inherit; font-size:.72rem; font-weight:700; color:var(--muted); cursor:pointer; }
+  .tabbar button .ico { display:block; font-size:1.25rem; margin-bottom:1px; }
+  .tabbar button.active { color:var(--coral-deep); }
+  /* CARDS */
+  .card { background:#fff; border:1px solid var(--line); border-radius:14px; padding:14px; margin-bottom:12px; box-shadow:0 1px 3px rgba(14,31,24,.04); }
+  .avatar { width:42px; height:42px; border-radius:50%; background:var(--forest); color:var(--cream); display:flex; align-items:center; justify-content:center; font-weight:800; flex-shrink:0; }
+  .avatar.demo { background:#8FA398; }
+  .row { display:flex; gap:10px; align-items:center; }
+  .meta-chip { background:var(--cream); border:1px solid var(--line); border-radius:7px; padding:3px 9px; font-size:.76rem; font-weight:600; display:inline-block; margin:2px 3px 0 0; }
+  .pill { font-size:.66rem; font-weight:800; border-radius:6px; padding:2px 7px; text-transform:uppercase; letter-spacing:.04em; }
+  .pill.demo { background:#EBEFEC; color:#7A8B80; }
+  .pill.official { background:var(--coral-soft); color:var(--coral-deep); }
+  .pill.go { background:var(--green-soft); color:var(--green); }
+  .pill.drop { background:var(--red-soft); color:var(--red); }
+  .pill.open { background:var(--coral-soft); color:var(--coral-deep); }
+  .pill.test { background:#FFF3CD; color:#7A5C00; border:1px solid #E8D48A; }
+  .muted { color:var(--muted); font-size:.84rem; }
+  .btn { display:block; width:100%; background:var(--coral); color:#fff; border:none; border-radius:11px; padding:13px; font-size:.98rem; font-weight:800; cursor:pointer; font-family:inherit; margin-top:10px; }
+  .btn:active { background:var(--coral-deep); }
+  .btn.sec { background:#fff; color:var(--ink); border:1.5px solid var(--line); font-weight:600; }
+  .btn.small { width:auto; display:inline-block; padding:8px 14px; font-size:.82rem; margin-top:8px; }
+  .btn.ghost { background:none; border:none; color:var(--muted); font-weight:600; font-size:.84rem; text-decoration:underline; }
+  .btn:disabled { background:var(--line); color:var(--muted); cursor:default; }
+  input, select, textarea { width:100%; border:1.5px solid var(--line); border-radius:10px; padding:11px 13px; font-size:1rem; font-family:inherit; background:#fff; color:var(--ink); margin-top:6px; }
+  input:focus, select:focus, textarea:focus { outline:none; border-color:var(--coral); }
+  label { font-size:.76rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; display:block; margin-top:11px; }
+  .f2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  /* PROGRESS BAR */
+  .prog { height:7px; background:var(--cream); border-radius:99px; overflow:hidden; border:1px solid var(--line); flex:1; }
+  .prog > div { height:100%; background:var(--coral); border-radius:99px; }
+  .prog.full > div { background:var(--green); }
+  /* CAPS BADGE */
+  .caps { background:var(--coral-soft); border:1px solid rgba(224,120,86,.35); border-radius:10px; padding:9px 12px; font-size:.82rem; color:var(--coral-deep); font-weight:700; margin-bottom:12px; }
+  /* SHEET */
+  .sheet { position:fixed; inset:0; background:rgba(14,31,24,.5); display:none; align-items:flex-end; justify-content:center; z-index:60; }
+  .sheet.open { display:flex; }
+  .sheet-inner { background:var(--cream); width:100%; max-width:480px; border-radius:18px 18px 0 0; padding:18px 16px 24px; max-height:90vh; overflow-y:auto; }
+  .sheet-inner h3 { color:var(--forest); font-size:1.1rem; }
+  /* CHAT */
+  .chat-box { display:flex; flex-direction:column; gap:6px; margin:10px 0; max-height:300px; overflow-y:auto; }
+  .msg { max-width:80%; padding:8px 12px; border-radius:13px; font-size:.9rem; }
+  .msg.me { background:var(--coral); color:#fff; align-self:flex-end; border-bottom-right-radius:4px; }
+  .msg.them { background:#fff; border:1px solid var(--line); align-self:flex-start; border-bottom-left-radius:4px; }
+  .msg.sys { background:none; color:var(--muted); font-size:.76rem; align-self:center; }
+  /* FEEDBACK FAB */
+  .fb-fab { position:fixed; bottom:74px; right:calc(50% - 240px + 14px); background:var(--forest); color:var(--cream); border:none; border-radius:99px; padding:11px 16px; font-weight:800; font-size:.82rem; cursor:pointer; font-family:inherit; box-shadow:0 4px 14px rgba(14,31,24,.3); z-index:39; }
+  @media (max-width:508px){ .fb-fab { right:14px; } }
+  /* REVIEW */
+  .review-bar { display:none; background:#FFF8E8; border:1.5px solid var(--gold); border-radius:12px; padding:10px 12px; margin-bottom:10px; }
+  body.review .review-bar { display:block; }
+  .rv-title { font-size:.74rem; font-weight:800; color:#7A5C00; text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px; }
+  .rv-row { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+  .rv-who { font-weight:800; font-size:.78rem; width:16px; }
+  .rv-btn { border:1px solid var(--line); background:#fff; border-radius:7px; padding:3px 10px; font-size:.74rem; font-weight:700; cursor:pointer; font-family:inherit; color:var(--muted); }
+  .rv-btn.keep { background:var(--green-soft); border-color:var(--green); color:var(--green); }
+  .rv-btn.drop { background:var(--red-soft); border-color:var(--red); color:var(--red); }
+  .rv-note { margin-top:6px; font-size:.8rem; padding:7px 10px; }
+  .empty { text-align:center; color:var(--muted); padding:36px 16px; font-size:.9rem; }
+  .section-h { font-size:.78rem; font-weight:800; color:var(--muted); text-transform:uppercase; letter-spacing:.07em; margin:18px 0 8px; }
+  .receipt { border:2px dashed var(--gold); border-radius:12px; padding:14px; background:#FFFDF6; margin-top:12px; }
+  .kpi { display:flex; gap:8px; margin:10px 0; }
+  .kpi > div { flex:1; background:#fff; border:1px solid var(--line); border-radius:10px; padding:10px; text-align:center; }
+  .kpi .v { font-weight:800; font-size:1.2rem; color:var(--coral-deep); }
+  .kpi .l { font-size:.68rem; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="h-row">
+      <div class="logo">fl<span>o</span>k <span style="font-style:normal;font-size:.7rem;opacity:.7">webapp v1</span></div>
+      <button class="rev-toggle" id="revToggle">🗳 Cofounder-review</button>
+    </div>
+    <div class="demo-banner" id="demoBanner">⚠️ TESTVERSION · data gemmes i denne browser (Supabase-klar datalag) · grå profiler = DEMO · betaling er markeret TEST</div>
+  </header>
+  <main id="main"></main>
+  <div class="tabbar" id="tabbar" style="display:none">
+    <button data-v="match"><span class="ico">👥</span>Løbere</button>
+    <button data-v="tours"><span class="ico">🏃</span>Ture</button>
+    <button data-v="guides"><span class="ico">🗺</span>Guides</button>
+    <button data-v="me"><span class="ico">⚙️</span>Mig</button>
+  </div>
+  <button class="fb-fab" id="fbFab" style="display:none">💬 Feedback</button>
+  <div class="sheet" id="sheet"><div class="sheet-inner" id="sheetInner"></div></div>
+</div>
+<script>
+/* =====================================================================
+   DATA-LAG — swap til Supabase: implementér samme interface i SupaDB
+   (alle reads/writes går gennem DB.*, intet rører localStorage direkte)
+   ===================================================================== */
+const LocalDB = {
+  KEY: 'flokApp_v1',
+  load(){ try { return JSON.parse(localStorage.getItem(this.KEY)); } catch(e){ return null; } },
+  save(s){ try { localStorage.setItem(this.KEY, JSON.stringify(s)); } catch(e){} },
+  reset(){ try { localStorage.removeItem(this.KEY); } catch(e){} }
+};
+const DB = LocalDB; // ← SUPABASE-SWAP: const DB = SupaDB;
+
+const H = 3600e3, D = 24*H;
+function nextWd(from, wd, h, m){ const d=new Date(from); d.setHours(h,m,0,0); let a=(wd-d.getDay()+7)%7; if(a===0&&d.getTime()<=from)a=7; d.setDate(d.getDate()+a); return d.getTime(); }
+
+function seed(){
+  const now = Date.now();
+  const tmr = new Date(now+D); tmr.setHours(17,30,0,0);
+  const tmrNoon = new Date(now+D); tmrNoon.setHours(12,0,0,0);
+  const wed = nextWd(now+2*D, 3, 17, 30);
+  return {
+    me: null, view:'match', reviewMode:false,
+    users: [
+      {id:'u1', demo:true, name:'Astrid', pace:'5:00', dist:'10-21 km', times:'Morgen', area:'Østerbro', bio:'Træner til CPH Half. Elsker intervaller.'},
+      {id:'u2', demo:true, name:'Mads', pace:'5:30', dist:'5-10 km', times:'Aften', area:'Nørrebro', bio:'Løber for hovedet, ikke uret.'},
+      {id:'u3', demo:true, name:'Emma', pace:'5:30', dist:'5-15 km', times:'Aften', area:'Vesterbro', bio:'Ny i KBH — søger faste løbemakkere.'},
+      {id:'u4', demo:true, name:'Jonas K', pace:'4:45', dist:'10-30 km', times:'Morgen + weekend', area:'Amager', bio:'Marathon-projekt 2027.'},
+      {id:'u5', demo:true, name:'Sofia', pace:'6:00', dist:'5 km', times:'Middag', area:'Indre By', bio:'Frokost-løber. Roligt tempo, god snak.'},
+      {id:'u6', demo:true, name:'Oliver', pace:'5:15', dist:'8-15 km', times:'Aften', area:'Østerbro', bio:'Altid klar på en tur langs vandet.'}
+    ],
+    requests: [], chats: {},
+    tours: [
+      {id:'t1', type:'guide_open', creator:'Søren', official:true, start:tmr.getTime(), km:7, pace:'5:30', route:'Rundt i centrum — start ved Rådhuspladsen', min:3, deadline:tmrNoon.getTime(), joined:['Mads']},
+      {id:'t2', type:'buddy', creator:'Emma', official:false, start:wed, km:5, pace:'5:30', route:'Søerne rundt fra Dronning Louises Bro', already:['Emma','Mads'], target:4, joined:[]}
+    ],
+    guides: [
+      {id:'g1', name:'Søren', demo:false, official:true, bio:'Founder · 64 VDOT · kender hver baggård i Indre By', tours:'Sightseeing-run · tempo-pas · long run', base5:200, base10:300, baseLong:600},
+      {id:'g2', name:'Marcus', demo:true, official:true, bio:'DEMO-guide · historie-nørd, storytelling-ture på Vesterbro', tours:'Storytelling · sightseeing', base5:200, base10:300, baseLong:600},
+      {id:'g3', name:'Line', demo:true, official:true, bio:'DEMO-guide · morgenløb langs havnen, sub-5:00 tempo-ture', tours:'Morgentur · tempo-pas', base5:200, base10:300, baseLong:600}
+    ],
+    bookings: [], feedback: [],
+    review: {}, caps: { used:0, lifetime:0, monthKey: new Date().toISOString().slice(0,7) }
+  };
+}
+let S = DB.load();
+if(!S || !S.users) S = seed();
+if(S.caps.monthKey !== new Date().toISOString().slice(0,7)){ S.caps.monthKey = new Date().toISOString().slice(0,7); S.caps.used = 0; }
+function save(){ DB.save(S); }
+function esc(s){ return (s||'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fmtDay(ts){
+  const d=new Date(ts), today=new Date(); today.setHours(0,0,0,0);
+  const diff=Math.round((new Date(ts).setHours(0,0,0,0)-today.getTime())/D);
+  const wd=d.toLocaleDateString('da-DK',{weekday:'long'});
+  const t=d.toLocaleTimeString('da-DK',{hour:'2-digit',minute:'2-digit'});
+  if(diff===0) return 'I dag · '+t;
+  if(diff===1) return 'I morgen ('+wd+') · '+t;
+  return wd.charAt(0).toUpperCase()+wd.slice(1)+' '+d.getDate()+'/'+(d.getMonth()+1)+' · '+t;
+}
+function fmtLeft(ms){ if(ms<=0)return 'udløbet'; const dd=Math.floor(ms/D),hh=Math.floor(ms%D/H),mm=Math.floor(ms%H/6e4); if(dd>0)return dd+' dg '+hh+' t'; if(hh>0)return hh+' t '+mm+' min'; return mm+' min'; }
+
+/* ============ REVIEW-SYSTEM (cofounder behold/drop pr. feature) ============ */
+const FEATURES = [
+  ['onboarding','Onboarding + hensigts-valg (Find løbere / Book guide)'],
+  ['profil','Profil (pace · distancer · tidspunkter · bio)'],
+  ['feed','Match-feed med pace/områdefilter'],
+  ['request','Match-request m. besked + run-intent + konkret tur'],
+  ['chat','Accept/afvis + 1:1-chat'],
+  ['caps','Free-caps (3/md · 10 lifetime · synlig tæller)'],
+  ['aabentur','Åben tur (guide poster · threshold · frist · auto-drop)'],
+  ['buddy','Buddy-flok (vi er 2, søger 2 mere)'],
+  ['katalog','Guide-katalog (kurateret)'],
+  ['booking','Booking m. live gruppe-pris + TEST-checkout'],
+  ['fbsys','Feedback-knap på alle skærme'],
+  ['admin','Admin + guide-view']
+];
+function reviewBar(fid){
+  const f = FEATURES.find(x=>x[0]===fid);
+  if(!f) return '';
+  const r = S.review[fid] || {};
+  let rows = '';
+  ['S','J','E'].forEach(p=>{
+    const v = (r[p]||{}).vote;
+    rows += '<div class="rv-row"><span class="rv-who">'+p+'</span>'+
+      '<button class="rv-btn'+(v==='keep'?' keep':'')+'" onclick="vote(\''+fid+'\',\''+p+'\',\'keep\')">Behold</button>'+
+      '<button class="rv-btn'+(v==='drop'?' drop':'')+'" onclick="vote(\''+fid+'\',\''+p+'\',\'drop\')">Drop</button></div>';
+  });
+  return '<div class="review-bar"><div class="rv-title">🗳 '+esc(f[1])+'</div>'+rows+
+    '<input class="rv-note" placeholder="Fælles note…" value="'+esc(r.note||'')+'" onchange="rnote(\''+fid+'\',this.value)"></div>';
+}
+function vote(fid,p,v){
+  S.review[fid] = S.review[fid]||{};
+  S.review[fid][p] = S.review[fid][p]||{};
+  S.review[fid][p].vote = S.review[fid][p].vote===v ? null : v;
+  save(); render();
+}
+function rnote(fid,v){ S.review[fid]=S.review[fid]||{}; S.review[fid].note=v; save(); }
+</script>
+<script>
+/* ============ NAVIGATION ============ */
+const main = document.getElementById('main');
+function go(v){ S.view=v; save(); render(); window.scrollTo(0,0); }
+document.querySelectorAll('.tabbar button').forEach(b=>b.onclick=()=>go(b.dataset.v));
+document.getElementById('revToggle').onclick=()=>{
+  S.reviewMode=!S.reviewMode; save();
+  document.body.classList.toggle('review', S.reviewMode);
+  document.getElementById('revToggle').classList.toggle('on', S.reviewMode);
+  render();
+};
+document.getElementById('fbFab').onclick=()=>openFeedback();
+
+/* ============ SHEET HELPERS ============ */
+const sheet=document.getElementById('sheet'), sheetInner=document.getElementById('sheetInner');
+function openSheet(html){ sheetInner.innerHTML=html; sheet.classList.add('open'); }
+function closeSheet(){ sheet.classList.remove('open'); }
+sheet.onclick=e=>{ if(e.target===sheet) closeSheet(); };
+
+/* ============ ONBOARDING ============ */
+function renderOnboarding(step){
+  document.getElementById('tabbar').style.display='none';
+  document.getElementById('fbFab').style.display='none';
+  if(step===1){
+    main.innerHTML = reviewBar('onboarding')+
+    '<div style="text-align:center;padding:26px 0 10px"><div style="font-size:2.6rem;font-weight:800;font-style:italic;color:var(--forest)">fl<span style="color:var(--coral)">o</span>k</div><p class="muted">Find nogen at løbe med — i dit tempo.</p></div>'+
+    '<div class="card"><label>Dit navn</label><input id="obName">'+
+    '<label>Mobilnummer</label><input id="obPhone" inputmode="tel" placeholder="+45…">'+
+    '<p class="muted" style="margin-top:8px;font-size:.76rem">I den rigtige version sendes en SMS-kode her (telefon-bundne caps). I testversionen springes koden over.</p>'+
+    '<label>Hvad vil du?</label>'+
+    '<button class="btn" onclick="obIntent(\'match\')">👥 Find løbere at løbe med</button>'+
+    '<button class="btn sec" onclick="obIntent(\'guide\')">🗺 Book en guide / se ture</button></div>';
+  } else {
+    main.innerHTML = reviewBar('profil')+
+    '<h2 class="screen-title">Din løbeprofil</h2><p class="screen-sub">Det her matcher vi på.</p>'+
+    '<div class="card"><div class="f2"><div><label>Tempo (min/km)</label><select id="obPace"><option>4:30</option><option>4:45</option><option>5:00</option><option>5:15</option><option selected>5:30</option><option>5:45</option><option>6:00</option><option>6:30</option></select></div>'+
+    '<div><label>Distancer</label><select id="obDist"><option>5 km</option><option selected>5-10 km</option><option>10-15 km</option><option>15-25 km</option><option>25+ km</option></select></div></div>'+
+    '<div class="f2"><div><label>Tidspunkter</label><select id="obTimes"><option>Morgen</option><option>Middag</option><option selected>Aften</option><option>Weekend</option></select></div>'+
+    '<div><label>Område</label><input id="obArea" placeholder="fx Østerbro"></div></div>'+
+    '<label>Kort bio</label><textarea id="obBio" rows="2" placeholder="Hvem er du som løber?"></textarea>'+
+    '<button class="btn" onclick="obDone()">Færdig — vis mig appen</button></div>';
+  }
+}
+let obTmp={};
+function obIntent(intent){
+  const n=document.getElementById('obName').value.trim(), p=document.getElementById('obPhone').value.trim();
+  if(!n||!p){ alert('Udfyld navn og mobilnummer.'); return; }
+  obTmp={name:n,phone:p,intent};
+  renderOnboarding(2);
+}
+function obDone(){
+  S.me = { ...obTmp, pace:document.getElementById('obPace').value, dist:document.getElementById('obDist').value,
+    times:document.getElementById('obTimes').value, area:document.getElementById('obArea').value.trim()||'København',
+    bio:document.getElementById('obBio').value.trim(), isGuide:false, isAdmin:false };
+  S.view = obTmp.intent==='guide' ? 'guides' : 'match';
+  save(); render();
+}
+
+/* ============ MATCH-FEED ============ */
+function capsLeft(){ return Math.max(0, 3-S.caps.used); }
+function capsHtml(){
+  return '<div class="caps">Free: '+S.caps.used+' af 3 match-requests brugt denne måned · '+S.caps.lifetime+' af 10 all-time</div>';
+}
+function renderMatch(){
+  let html = reviewBar('feed')+'<h2 class="screen-title">Løbere nær dig</h2><p class="screen-sub">København · sorteret efter tempo-match</p>'+reviewBar('caps')+capsHtml();
+  const myPace = S.me.pace;
+  const sorted = [...S.users].sort((a,b)=>Math.abs(paceS(a.pace)-paceS(myPace))-Math.abs(paceS(b.pace)-paceS(myPace)));
+  sorted.forEach(u=>{
+    const req = S.requests.find(r=>r.to===u.id);
+    html += '<div class="card"><div class="row"><div class="avatar'+(u.demo?' demo':'')+'">'+esc(u.name.charAt(0))+'</div>'+
+    '<div style="flex:1"><b>'+esc(u.name)+'</b> '+(u.demo?'<span class="pill demo">demo</span>':'')+
+    '<div class="muted" style="font-size:.78rem">'+esc(u.area)+'</div></div></div>'+
+    '<div style="margin-top:8px"><span class="meta-chip">⚡ '+esc(u.pace)+' /km</span><span class="meta-chip">🏃 '+esc(u.dist)+'</span><span class="meta-chip">🕐 '+esc(u.times)+'</span></div>'+
+    '<p class="muted" style="margin-top:8px">'+esc(u.bio)+'</p>'+
+    (req ? reqStatusHtml(req) : '<button class="btn small" onclick="openRequest(\''+u.id+'\')">Send invitation</button>')+
+    '</div>';
+  });
+  html += reviewBar('request')+reviewBar('chat');
+  main.innerHTML = html;
+}
+function paceS(p){ const [m,s]=p.split(':').map(Number); return m*60+(s||0); }
+function reqStatusHtml(r){
+  if(r.status==='pending') return '<p class="muted" style="margin-top:8px">⏳ Invitation sendt — afventer svar'+(S.users.find(u=>u.id===r.to)?.demo?' <i>(demo-profil svarer automatisk)</i>':'')+'</p>';
+  if(r.status==='accepted') return '<button class="btn small" onclick="openChat(\''+r.id+'\')">💬 Åbn chat</button>';
+  return '<p class="muted" style="margin-top:8px">Afvist — det sker. Ingen refusion af cap (rigtig regel-diskussion til review).</p>';
+}
+function openRequest(uid){
+  if(capsLeft()<=0 || S.caps.lifetime>=10){
+    openSheet('<h3>Du har brugt dine gratis invitationer</h3><p class="muted" style="margin:10px 0">'+(capsLeft()<=0?'3 af 3 denne måned brugt.':'10 af 10 all-time brugt.')+' I den rigtige app er det her premium-prompten (49 kr/md · ubegrænset). I testperioden er alt gratis — men muren skal MÆRKES, derfor er den her.</p><button class="btn sec" onclick="closeSheet()">OK, forstået</button>');
+    return;
+  }
+  const u = S.users.find(x=>x.id===uid);
+  openSheet('<h3>Invitér '+esc(u.name)+' med på en tur</h3>'+
+  '<label>Hvad er det for en tur?</label><select id="rqIntent"><option>Roligt løb + snak</option><option>Kvalitetspas / tempo</option><option>Long run</option><option>Recovery</option></select>'+
+  '<div class="f2"><div><label>Distance (km)</label><input id="rqKm" type="number" value="7" inputmode="numeric"></div><div><label>Tempo</label><input id="rqPace" value="'+esc(S.me.pace)+'"></div></div>'+
+  '<label>Hvornår</label><input id="rqWhen" placeholder="fx torsdag 17:30">'+
+  '<label>Din besked (vigtigst!)</label><textarea id="rqMsg" rows="3" placeholder="Hey! Jeg skal løbe det her kvalitetspas torsdag — vil du med?"></textarea>'+
+  '<button class="btn" onclick="sendRequest(\''+uid+'\')">Send invitation (bruger 1 af '+capsLeft()+')</button>'+
+  '<button class="btn ghost" onclick="closeSheet()">Annullér</button>');
+}
+function sendRequest(uid){
+  const msg = document.getElementById('rqMsg').value.trim();
+  if(!msg){ alert('Beskeden er hele pointen — skriv hvorfor de skal med.'); return; }
+  const r = { id:'r'+Date.now(), to:uid, from:'me', status:'pending',
+    intent:document.getElementById('rqIntent').value, km:document.getElementById('rqKm').value,
+    pace:document.getElementById('rqPace').value, when:document.getElementById('rqWhen').value, msg };
+  S.requests.push(r);
+  S.caps.used++; S.caps.lifetime++;
+  save(); closeSheet(); render();
+  const u = S.users.find(x=>x.id===uid);
+  if(u && u.demo){
+    setTimeout(()=>{
+      r.status='accepted';
+      S.chats[r.id]=[{who:'sys',text:u.name+' accepterede din invitation (demo-svar)'},{who:'them',text:'Lyder godt! Vi ses — jeg tager '+r.pace+'-tempoet med. 🏃 (demo-besked)'}];
+      save(); render();
+    }, 2500);
+  }
+}
+function openChat(rid){
+  const r = S.requests.find(x=>x.id===rid);
+  const u = S.users.find(x=>x.id===r.to);
+  const msgs = (S.chats[rid]||[]).map(m=>'<div class="msg '+m.who+'">'+esc(m.text)+'</div>').join('');
+  openSheet('<h3>💬 '+esc(u.name)+' '+(u.demo?'<span class="pill demo">demo</span>':'')+'</h3>'+
+  '<p class="muted" style="font-size:.78rem;margin-top:4px">'+esc(r.intent)+' · '+esc(r.km)+' km · '+esc(r.pace)+' /km · '+esc(r.when||'tid aftales')+'</p>'+
+  '<div class="chat-box">'+msgs+'</div>'+
+  '<input id="chatIn" placeholder="Skriv…"><button class="btn" onclick="sendMsg(\''+rid+'\')">Send</button>'+
+  '<button class="btn ghost" onclick="closeSheet()">Luk</button>');
+}
+function sendMsg(rid){
+  const v = document.getElementById('chatIn').value.trim();
+  if(!v) return;
+  S.chats[rid] = S.chats[rid]||[];
+  S.chats[rid].push({who:'me',text:v});
+  save(); openChat(rid);
+}
+
+/* ============ TURE (åben tur + buddy-flok) ============ */
+function tourStatus(t){
+  if(t.type==='guide_open'){
+    if(t.joined.length>=t.min) return 'go';
+    if(Date.now()>t.deadline) return 'drop';
+    return 'open';
+  }
+  const tot = t.already.length + t.joined.length;
+  if(tot>=t.target) return 'go';
+  if(Date.now()>t.start) return 'drop';
+  return 'open';
+}
+function renderTours(){
+  let html = reviewBar('aabentur')+'<h2 class="screen-title">Ture</h2><p class="screen-sub">Åbne guide-ture og buddy-flokke — gratis, fælles løb. Ikke guidede ture.</p>'+reviewBar('buddy');
+  const tours=[...S.tours].sort((a,b)=>a.start-b.start);
+  tours.forEach(t=>{
+    const st=tourStatus(t);
+    const youIn = t.joined.includes(S.me.name);
+    const stPill = st==='go'?'<span class="pill go">✓ Kører</span>':st==='drop'?'<span class="pill drop">Droppet</span>':'<span class="pill open">Åben</span>';
+    const isBuddy = t.type==='buddy';
+    const cur = isBuddy ? t.already.length+t.joined.length : t.joined.length;
+    const goal = isBuddy ? t.target : t.min;
+    html += '<div class="card"><div class="row"><div class="avatar'+(isBuddy?' demo':'')+'">'+esc(t.creator.charAt(0))+'</div>'+
+    '<div style="flex:1"><b>'+esc(t.creator)+'</b> '+(t.official?'<span class="pill official">Officiel guide</span>':'<span class="pill demo">buddy-flok</span>')+'</div>'+stPill+'</div>'+
+    '<div style="font-size:1.1rem;font-weight:800;color:var(--forest);margin-top:9px">'+fmtDay(t.start)+'</div>'+
+    '<div style="margin-top:6px"><span class="meta-chip">🏃 '+t.km+' km</span><span class="meta-chip">⚡ '+esc(t.pace)+' /km</span><span class="meta-chip">👥 '+(isBuddy?'mål '+goal+' i alt':'kører ved min. '+goal)+'</span></div>'+
+    '<p class="muted" style="margin-top:7px">📍 '+esc(t.route)+'</p>'+
+    (isBuddy?'<p class="muted" style="margin-top:5px">Allerede med: <b>'+t.already.map(esc).join('</b> · <b>')+'</b></p>':'')+
+    '<div class="row" style="margin-top:9px"><div class="prog'+(st==='go'?' full':'')+'"><div style="width:'+Math.min(100,cur/goal*100)+'%"></div></div><span class="muted" style="font-size:.8rem;white-space:nowrap">'+cur+' / '+goal+'</span></div>'+
+    (t.joined.length?'<p class="muted" style="margin-top:6px;font-size:.8rem">Tilmeldt: <b>'+t.joined.map(esc).join('</b> · <b>')+'</b></p>':'')+
+    (st==='open'&&!isBuddy?'<p class="muted" style="margin-top:5px;font-size:.78rem">Tilmelding lukker om <b style="color:var(--coral-deep)">'+fmtLeft(t.deadline-Date.now())+'</b></p>':'')+
+    (st==='drop'?'<p class="muted" style="margin-top:6px">For få inden fristen — droppet. Ingen sure miner.</p>':
+      (youIn?'<div style="margin-top:10px;background:var(--green-soft);border-radius:10px;padding:9px;text-align:center;font-weight:800;color:var(--green)">✓ Du er på!</div><button class="btn ghost" onclick="leaveTour(\''+t.id+'\')">Afmeld</button>'
+      :'<button class="btn" onclick="joinTour(\''+t.id+'\')">Løb med</button>'))+
+    '</div>';
+  });
+  html += '<button class="btn sec" onclick="openCreateTour()">＋ Læg en tur op</button>';
+  main.innerHTML = html;
+}
+function joinTour(id){ const t=S.tours.find(x=>x.id===id); if(!t.joined.includes(S.me.name)) t.joined.push(S.me.name); save(); render(); }
+function leaveTour(id){ const t=S.tours.find(x=>x.id===id); t.joined=t.joined.filter(n=>n!==S.me.name); save(); render(); }
+function openCreateTour(){
+  const isG = S.me.isGuide;
+  openSheet('<h3>Læg en tur op</h3>'+
+  '<label>Type</label><select id="ctType">'+(isG?'<option value="guide_open">Åben guide-tur (med min. antal + frist)</option>':'')+'<option value="buddy">Buddy-flok (vi er nogle stykker, søger flere)</option></select>'+
+  '<div class="f2"><div><label>Dato</label><input type="date" id="ctDate"></div><div><label>Tid</label><input type="time" id="ctTime" value="17:30"></div></div>'+
+  '<div class="f2"><div><label>Km</label><input type="number" id="ctKm" value="5" inputmode="numeric"></div><div><label>Tempo</label><input id="ctPace" value="'+esc(S.me.pace)+'"></div></div>'+
+  '<label>Rute</label><input id="ctRoute" placeholder="fx Søerne rundt fra Dr. Louises Bro">'+
+  '<div class="f2"><div><label id="ctMinLbl">Mål-antal i alt</label><input type="number" id="ctMin" value="4" inputmode="numeric"></div>'+
+  '<div id="ctDlWrap" style="display:none"><label>Frist</label><input type="datetime-local" id="ctDl"></div></div>'+
+  '<div id="ctAlreadyWrap"><label>Hvem er allerede med? (komma-sep.)</label><input id="ctAlready" value="'+esc(S.me.name)+'"></div>'+
+  '<button class="btn" onclick="createTour()">Læg op</button><button class="btn ghost" onclick="closeSheet()">Annullér</button>');
+  const typeSel = document.getElementById('ctType');
+  const upd = ()=>{
+    const g = typeSel.value==='guide_open';
+    document.getElementById('ctDlWrap').style.display = g?'block':'none';
+    document.getElementById('ctAlreadyWrap').style.display = g?'none':'block';
+    document.getElementById('ctMinLbl').textContent = g?'Kører ved min.':'Mål-antal i alt';
+  };
+  typeSel.onchange = upd; upd();
+  const tmr = new Date(Date.now()+D);
+  document.getElementById('ctDate').value = tmr.toISOString().slice(0,10);
+  const dl = new Date(Date.now()+20*H);
+  document.getElementById('ctDl').value = new Date(dl.getTime()-dl.getTimezoneOffset()*6e4).toISOString().slice(0,16);
+}
+function createTour(){
+  const type = document.getElementById('ctType').value;
+  const date=document.getElementById('ctDate').value, time=document.getElementById('ctTime').value, route=document.getElementById('ctRoute').value.trim();
+  if(!date||!time||!route){ alert('Udfyld dato, tid og rute.'); return; }
+  const start = new Date(date+'T'+time).getTime();
+  const t = { id:'t'+Date.now(), type, creator:S.me.name, official:type==='guide_open',
+    start, km:+document.getElementById('ctKm').value||5, pace:document.getElementById('ctPace').value.trim()||'5:30',
+    route, joined:[] };
+  if(type==='guide_open'){
+    t.min = +document.getElementById('ctMin').value||3;
+    t.deadline = new Date(document.getElementById('ctDl').value).getTime();
+    if(!(t.deadline<start)){ alert('Fristen skal ligge før turen.'); return; }
+  } else {
+    t.target = +document.getElementById('ctMin').value||4;
+    t.already = document.getElementById('ctAlready').value.split(',').map(s=>s.trim()).filter(Boolean);
+  }
+  S.tours.push(t); save(); closeSheet(); render();
+}
+</script>
+<script>
+/* ============ GUIDES + BOOKING ============ */
+function flokPct(n){ if(n<=1)return 17; if(n<=4)return 17+(n-1)*(37.5-17)/3; return 37.5+(Math.min(n,8)-4)*(42-37.5)/4; }
+function renderGuides(){
+  let html = reviewBar('katalog')+'<h2 class="screen-title">Book en guide</h2><p class="screen-sub">Betalt, guidet tur — du bliver vist rundt i dit tempo. (Det andet end "Løb med"-turene.)</p>'+reviewBar('booking');
+  S.guides.forEach(g=>{
+    html += '<div class="card"><div class="row"><div class="avatar'+(g.demo?' demo':'')+'">'+esc(g.name.charAt(0))+'</div>'+
+    '<div style="flex:1"><b>'+esc(g.name)+'</b> <span class="pill official">guide</span>'+(g.demo?' <span class="pill demo">demo</span>':'')+
+    '<div class="muted" style="font-size:.78rem">'+esc(g.tours)+'</div></div></div>'+
+    '<p class="muted" style="margin-top:8px">'+esc(g.bio)+'</p>'+
+    '<div style="margin-top:6px"><span class="meta-chip">5K fra '+g.base5+' kr</span><span class="meta-chip">10K fra '+g.base10+' kr</span><span class="meta-chip">Long fra '+g.baseLong+' kr</span></div>'+
+    '<button class="btn small" onclick="openBooking(\''+g.id+'\')">Book tur</button></div>';
+  });
+  if(S.bookings.length){
+    html += '<div class="section-h">Dine bookinger</div>';
+    S.bookings.forEach(b=>{
+      html += '<div class="card"><b>'+esc(b.guideName)+'</b> · '+esc(b.date)+' · '+b.km+' km · '+b.persons+' pers. <span class="pill test">TEST · ingen betaling</span>'+
+      '<div class="muted" style="margin-top:5px">Total '+b.total+' kr · status: '+esc(b.status)+'</div></div>';
+    });
+  }
+  main.innerHTML = html;
+}
+function openBooking(gid){
+  const g = S.guides.find(x=>x.id===gid);
+  openSheet('<h3>Book '+esc(g.name)+'</h3>'+
+  '<div class="f2"><div><label>Dato</label><input type="date" id="bkDate"></div><div><label>Tour</label><select id="bkType"><option value="5">5K · base '+g.base5+' kr</option><option value="10" selected>10K · base '+g.base10+' kr</option><option value="21">Long · base '+g.baseLong+' kr</option></select></div></div>'+
+  '<div class="f2"><div><label>Tempo</label><select id="bkPace"><option value="1.15">5:00 (+15 %)</option><option value="1" selected>5:30</option><option value="0.95">6:00 (−5 %)</option></select></div>'+
+  '<div><label>Tidspunkt</label><select id="bkTime"><option value="1.15">Peak morgen/aften (+15 %)</option><option value="1" selected>Normal</option><option value="0.90">Midday (−10 %)</option></select></div></div>'+
+  '<label>Antal personer: <span id="bkPersV">2</span></label><input type="range" id="bkPers" min="1" max="8" value="2" oninput="bkCalc(\''+gid+'\')" style="padding:0">'+
+  '<label><input type="checkbox" id="bkStory" onchange="bkCalc(\''+gid+'\')" style="width:auto;margin-right:6px">Storytelling-add-on (+100 kr)</label>'+
+  '<div class="kpi"><div><div class="v" id="bkTotal">—</div><div class="l">Total</div></div><div><div class="v" id="bkPP">—</div><div class="l">Pr. person</div></div><div><div class="v" id="bkGuide">—</div><div class="l">Guide får</div></div></div>'+
+  '<button class="btn" onclick="payBooking(\''+gid+'\')">Betal <span class="pill test" style="margin-left:6px">TESTKØRSEL — ingen penge trækkes</span></button>'+
+  '<button class="btn ghost" onclick="closeSheet()">Annullér</button>');
+  document.getElementById('bkType').onchange=()=>bkCalc(gid);
+  document.getElementById('bkPace').onchange=()=>bkCalc(gid);
+  document.getElementById('bkTime').onchange=()=>bkCalc(gid);
+  const tmr=new Date(Date.now()+2*D);
+  document.getElementById('bkDate').value=tmr.toISOString().slice(0,10);
+  bkCalc(gid);
+}
+function bkVals(g){
+  const type=document.getElementById('bkType').value;
+  const base = type==='5'?g.base5:type==='10'?g.base10:g.baseLong;
+  const n=+document.getElementById('bkPers').value;
+  const perPers = base*(+document.getElementById('bkPace').value)*(+document.getElementById('bkTime').value);
+  const total = Math.round(n*perPers + (document.getElementById('bkStory').checked?100:0));
+  const fee = Math.round(total*flokPct(n)/100);
+  return {n, total, fee, km: type==='5'?5:type==='10'?10:21};
+}
+function bkCalc(gid){
+  const g=S.guides.find(x=>x.id===gid);
+  const v=bkVals(g);
+  document.getElementById('bkPersV').textContent=v.n;
+  document.getElementById('bkTotal').textContent=v.total+' kr';
+  document.getElementById('bkPP').textContent=Math.round(v.total/v.n)+' kr';
+  document.getElementById('bkGuide').textContent=(v.total-v.fee)+' kr';
+}
+function payBooking(gid){
+  const g=S.guides.find(x=>x.id===gid);
+  const v=bkVals(g);
+  S.bookings.push({ id:'b'+Date.now(), guideId:gid, guideName:g.name, date:document.getElementById('bkDate').value,
+    km:v.km, persons:v.n, total:v.total, fee:v.fee, status:'afventer guide-bekræftelse', payment:'TEST_MODE' });
+  save();
+  openSheet('<h3>Kvittering</h3><div class="receipt"><b>'+esc(g.name)+'</b> · '+v.km+' km · '+v.n+' personer<br>Total: <b>'+v.total+' kr</b> (guide '+(v.total-v.fee)+' / flok '+v.fee+')<br><br>'+
+  '<span class="pill test">TESTKØRSEL — DER ER IKKE TRUKKET PENGE</span><br><br>'+
+  '<span class="muted">I den rigtige version betales her via Stripe. Guiden bekræfter din booking manuelt.</span></div>'+
+  '<button class="btn" onclick="closeSheet();render()">OK</button>');
+}
+
+/* ============ MIG (profil · caps · guide-view · admin) ============ */
+function renderMe(){
+  let html = reviewBar('profil')+'<h2 class="screen-title">'+esc(S.me.name)+'</h2><p class="screen-sub">'+esc(S.me.phone)+' · '+esc(S.me.area)+'</p>';
+  html += capsHtml();
+  html += '<div class="card"><div class="f2"><div><label>Tempo</label><input id="meP" value="'+esc(S.me.pace)+'"></div><div><label>Distancer</label><input id="meD" value="'+esc(S.me.dist)+'"></div></div>'+
+  '<label>Bio</label><textarea id="meB" rows="2">'+esc(S.me.bio)+'</textarea>'+
+  '<button class="btn small" onclick="saveMe()">Gem profil</button></div>';
+  html += '<div class="card"><b>Roller (test-omskifter)</b><p class="muted" style="font-size:.8rem">I den rigtige app styres det af admin — her kan I skifte selv for at se alle views.</p>'+
+  '<label style="text-transform:none"><input type="checkbox" '+(S.me.isGuide?'checked':'')+' onchange="S.me.isGuide=this.checked;save();render()" style="width:auto;margin-right:6px">Jeg er guide (kan lægge officielle ture op)</label>'+
+  '<label style="text-transform:none"><input type="checkbox" '+(S.me.isAdmin?'checked':'')+' onchange="S.me.isAdmin=this.checked;save();render()" style="width:auto;margin-right:6px">Jeg er admin (Søren-view)</label></div>';
+  if(S.me.isGuide){
+    const mine = S.tours.filter(t=>t.creator===S.me.name);
+    html += '<div class="section-h">Guide-view · mine ture ('+mine.length+')</div>';
+    mine.forEach(t=>{ const st=tourStatus(t); html+='<div class="card"><b>'+fmtDay(t.start)+'</b> · '+t.km+' km · '+(st==='go'?'<span class="pill go">kører</span>':st==='drop'?'<span class="pill drop">droppet</span>':'<span class="pill open">åben</span>')+'<div class="muted" style="margin-top:4px">Tilmeldt: '+(t.joined.join(', ')||'ingen endnu')+'</div></div>'; });
+    const myBk = S.bookings.filter(b=>S.guides.find(g=>g.id===b.guideId && g.name===S.me.name));
+    if(myBk.length){ html += '<div class="section-h">Booking-requests til mig</div>'; myBk.forEach(b=>{ html+='<div class="card"><b>'+esc(b.date)+'</b> · '+b.km+' km · '+b.persons+' pers · du får '+(b.total-b.fee)+' kr <span class="pill test">TEST</span><button class="btn small" onclick="confirmBk(\''+b.id+'\')">Bekræft</button></div>'; }); }
+  }
+  if(S.me.isAdmin){
+    html += reviewBar('admin')+'<div class="section-h">Admin</div>';
+    html += '<div class="kpi"><div><div class="v">'+S.users.length+'</div><div class="l">Profiler</div></div><div><div class="v">'+S.requests.length+'</div><div class="l">Requests</div></div><div><div class="v">'+S.tours.length+'</div><div class="l">Ture</div></div><div><div class="v">'+S.bookings.length+'</div><div class="l">Bookinger</div></div></div>';
+    html += '<div class="card"><b>Feedback ('+S.feedback.length+')</b>'+(S.feedback.length?S.feedback.map(f=>'<div style="border-top:1px dashed var(--line);margin-top:8px;padding-top:8px"><span class="muted" style="font-size:.74rem">'+esc(f.who)+' · '+esc(f.screen)+'</span><br>'+esc(f.text)+'</div>').join(''):'<p class="muted">Ingen endnu — brug 💬-knappen.</p>')+'</div>';
+    html += '<div class="card"><b>🗳 Review-status</b>'+reviewSummary()+'<button class="btn small" onclick="copyReview()">📋 Kopiér review-rapport</button></div>';
+    html += '<button class="btn sec" onclick="if(confirm(\'Nulstil ALT app-data?\')){DB.reset();location.reload();}">Nulstil hele appen</button>';
+  }
+  html += reviewBar('fbsys');
+  main.innerHTML = html;
+}
+function saveMe(){ S.me.pace=document.getElementById('meP').value; S.me.dist=document.getElementById('meD').value; S.me.bio=document.getElementById('meB').value; save(); render(); }
+function confirmBk(id){ const b=S.bookings.find(x=>x.id===id); b.status='bekræftet af guide'; save(); render(); }
+function reviewSummary(){
+  let out='<table style="width:100%;font-size:.78rem;margin-top:8px;border-collapse:collapse">';
+  FEATURES.forEach(([fid,name])=>{
+    const r=S.review[fid]||{};
+    const cell=p=>{ const v=(r[p]||{}).vote; return v==='keep'?'✅':v==='drop'?'❌':'·'; };
+    out+='<tr style="border-top:1px solid var(--line)"><td style="padding:4px 2px">'+esc(name)+'</td><td style="padding:4px">'+cell('S')+'</td><td style="padding:4px">'+cell('J')+'</td><td style="padding:4px">'+cell('E')+'</td></tr>';
+  });
+  return out+'</table>';
+}
+function copyReview(){
+  const dato=new Date().toLocaleDateString('da-DK',{day:'numeric',month:'long',year:'numeric'});
+  let txt='FLOK · FEATURE-REVIEW · '+dato+'\n'+'='.repeat(44)+'\n\n';
+  FEATURES.forEach(([fid,name])=>{
+    const r=S.review[fid]||{};
+    const v=p=>{ const x=(r[p]||{}).vote; return x==='keep'?'BEHOLD':x==='drop'?'DROP':'—'; };
+    txt+=name+'\n  S: '+v('S')+' · J: '+v('J')+' · E: '+v('E')+(r.note?'\n  Note: '+r.note:'')+'\n\n';
+  });
+  navigator.clipboard && navigator.clipboard.writeText(txt);
+  alert('Review-rapport kopieret.');
+}
+
+/* ============ FEEDBACK ============ */
+function openFeedback(){
+  openSheet('<h3>💬 Feedback</h3><p class="muted" style="margin-top:4px">Går direkte til admin-oversigten. Skriv alt — også det irriterende.</p>'+
+  '<label>Hvem er du?</label><input id="fbWho" value="'+esc(S.me?S.me.name:'')+'">'+
+  '<label>Feedback</label><textarea id="fbTxt" rows="3" placeholder="Hvad virker / hvad mangler / hvad forvirrer?"></textarea>'+
+  '<button class="btn" onclick="sendFb()">Send</button><button class="btn ghost" onclick="closeSheet()">Annullér</button>');
+}
+function sendFb(){
+  const t=document.getElementById('fbTxt').value.trim();
+  if(!t) return;
+  S.feedback.push({who:document.getElementById('fbWho').value.trim()||'?', screen:S.view, text:t, ts:Date.now()});
+  save(); closeSheet();
+}
+
+/* ============ RENDER ROOT ============ */
+function render(){
+  if(!S.me){ renderOnboarding(1); return; }
+  document.getElementById('tabbar').style.display='flex';
+  document.getElementById('fbFab').style.display='block';
+  document.body.classList.toggle('review', !!S.reviewMode);
+  document.getElementById('revToggle').classList.toggle('on', !!S.reviewMode);
+  document.querySelectorAll('.tabbar button').forEach(b=>b.classList.toggle('active', b.dataset.v===S.view));
+  if(S.view==='match') renderMatch();
+  else if(S.view==='tours') renderTours();
+  else if(S.view==='guides') renderGuides();
+  else renderMe();
+}
+render();
+setInterval(()=>{ if(S.me && S.view==='tours') render(); }, 60e3);
+</script>
+</body>
+</html>
